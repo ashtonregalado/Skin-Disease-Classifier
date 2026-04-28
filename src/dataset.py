@@ -1,6 +1,6 @@
 import os
 
-base_path = "SkinDisease/Train"
+base_path = "SkinDisease/train"
 
 classes = os.listdir(base_path)
 print("Classes:", classes)
