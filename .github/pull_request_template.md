@@ -1,7 +1,6 @@
 ## 📝 **Description**
 
-Briefly describe what this PR does
-What feature / fix / improvement is included
+Briefly describe what this PR does. What feature / fix / improvement is included?
 
 -
 
