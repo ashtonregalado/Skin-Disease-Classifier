@@ -1,7 +1,6 @@
 ## 📝 **Description**
 
-Briefly describe what this PR does
-What feature / fix / improvement is included
+Briefly describe what this PR does. What feature / fix / improvement is included?
 
 -
 
@@ -11,14 +10,6 @@ What feature / fix / improvement is included
 - Updated:
 - Fixed:
 - Removed:
-
-## 🧪 **How to Test**
-
-Steps to run/test this PR:
-
-1.
-2.
-3.
 
 ## 📸 **Screenshots (if applicable)**
 
