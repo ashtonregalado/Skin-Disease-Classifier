@@ -1,0 +1,56 @@
+=======================================================
+  TEST SET RESULTS
+=======================================================
+                     precision    recall  f1-score   support
+
+               Acne      0.662     0.692     0.677        65
+  Actinic_Keratosis      0.651     0.337     0.444        83
+      Benign_tumors      0.593     0.132     0.216       121
+            Bullous      0.514     0.655     0.576        55
+        Candidiasis      0.411     0.852     0.554        27
+       DrugEruption      0.583     0.459     0.514        61
+             Eczema      0.524     0.295     0.377       112
+ Infestations_Bites      0.286     0.433     0.344        60
+             Lichen      0.500     0.410     0.450        61
+              Lupus      0.242     0.441     0.312        34
+              Moles      0.284     0.575     0.380        40
+          Psoriasis      0.571     0.364     0.444        88
+            Rosacea      0.328     0.786     0.463        28
+  Seborrh_Keratoses      0.603     0.745     0.667        51
+         SkinCancer      0.667     0.286     0.400        77
+Sun_Sunlight_Damage      0.189     0.618     0.290        34
+              Tinea      0.583     0.206     0.304       102
+     Unknown_Normal      0.958     0.841     0.896       189
+    Vascular_Tumors      0.362     0.483     0.414        60
+         Vasculitis      0.282     0.558     0.374        52
+           Vitiligo      0.736     0.817     0.775        82
+              Warts      0.506     0.641     0.566        64
+
+           accuracy                          0.504      1546
+          macro avg      0.502     0.528     0.474      1546
+       weighted avg      0.574     0.504     0.500      1546
+
+
+Per-class accuracy:
+  Benign_tumors                  13.2%  ██  ← needs attention
+  Tinea                          20.6%  ████  ← needs attention
+  SkinCancer                     28.6%  █████  ← needs attention
+  Eczema                         29.5%  █████  ← needs attention
+  Actinic_Keratosis              33.7%  ██████  ← needs attention
+  Psoriasis                      36.4%  ███████  ← needs attention
+  Lichen                         41.0%  ████████  ← needs attention
+  Infestations_Bites             43.3%  ████████  ← needs attention
+  Lupus                          44.1%  ████████  ← needs attention
+  DrugEruption                   45.9%  █████████  ← needs attention
+  Vascular_Tumors                48.3%  █████████  ← needs attention
+  Vasculitis                     55.8%  ███████████
+  Moles                          57.5%  ███████████
+  Sun_Sunlight_Damage            61.8%  ████████████
+  Warts                          64.1%  ████████████
+  Bullous                        65.5%  █████████████
+  Acne                           69.2%  █████████████
+  Seborrh_Keratoses              74.5%  ██████████████
+  Rosacea                        78.6%  ███████████████
+  Vitiligo                       81.7%  ████████████████
+  Unknown_Normal                 84.1%  ████████████████
+  Candidiasis                    85.2%  █████████████████

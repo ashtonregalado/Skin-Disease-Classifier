@@ -50,6 +50,7 @@ def get_dataloaders(
 	# two ImageFolders for different transforms
 	dataset_train = datasets.ImageFolder(train_dir, transform=transform_train)
 	dataset_val = datasets.ImageFolder(train_dir, transform=transform_val)
+	pin_memory = torch.cuda.is_available()
 
 	num_samples = len(dataset_train)
 
@@ -84,7 +85,7 @@ def get_dataloaders(
 		batch_size=batch_size,
 		sampler=sampler,
 		num_workers=num_workers,
-		pin_memory=True,
+		pin_memory=pin_memory,
 	)
 
 	val_loader = DataLoader(
@@ -92,7 +93,7 @@ def get_dataloaders(
 		batch_size=batch_size,
 		shuffle=False,
 		num_workers=num_workers,
-		pin_memory=True,
+		pin_memory=pin_memory,
 	)
 
 	test_loader = None
@@ -103,7 +104,7 @@ def get_dataloaders(
 			batch_size=batch_size,
 			shuffle=False,
 			num_workers=num_workers,
-			pin_memory=True,
+			pin_memory=pin_memory,
 		)
 
 	return train_loader, val_loader, test_loader, dataset_train.classes
