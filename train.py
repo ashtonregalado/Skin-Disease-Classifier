@@ -1,0 +1,212 @@
+import os
+import torch
+import torch.nn as nn
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+from model import build_model, unfreeze_backbone
+from dataset import get_dataloaders
+
+os.makedirs("models", exist_ok=True)
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
+
+# ── Load data ─────────────────────────────────────────────────────────────
+train_loader, val_loader, test_loader, CLASS_NAMES, NUM_CLASSES = get_dataloaders()
+
+# ── Weighted CrossEntropyLoss to handle 6.7x class imbalance ─────────────
+class_counts = [593,748,1093,504,248,547,1010,524,553,311,
+                361,820,254,455,693,312,923,1651,543,461,714,580]
+total        = sum(class_counts)
+class_weights = torch.tensor(
+    [total / (NUM_CLASSES * c) for c in class_counts],
+    dtype=torch.float
+).to(DEVICE)
+
+criterion = nn.CrossEntropyLoss(weight=class_weights)
+
+def train_one_epoch(model, loader, optimizer, criterion, device):
+    model.train()
+    total_loss, correct, total = 0.0, 0, 0
+
+    for images, labels in loader:
+        images, labels = images.to(device), labels.to(device)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss    = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item() * images.size(0)
+        preds       = outputs.argmax(dim=1)
+        correct    += (preds == labels).sum().item()
+        total      += labels.size(0)
+
+    return total_loss / total, correct / total * 100
+
+
+def validate(model, loader, criterion, device):
+    model.eval()
+    total_loss, correct, total = 0.0, 0, 0
+
+    with torch.no_grad():
+        for images, labels in loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            loss    = criterion(outputs, labels)
+
+            total_loss += loss.item() * images.size(0)
+            preds       = outputs.argmax(dim=1)
+            correct    += (preds == labels).sum().item()
+            total      += labels.size(0)
+
+    return total_loss / total, correct / total * 100
+
+def run_training(
+    model, train_loader, val_loader, criterion, optimizer,
+    scheduler, device, num_epochs, save_path, early_stop_patience=7
+):
+    best_val_loss     = float('inf')
+    patience_counter  = 0
+    history = {
+        'train_loss': [], 'val_loss': [],
+        'train_acc' : [], 'val_acc' : []
+    }
+
+    for epoch in range(num_epochs):
+        train_loss, train_acc = train_one_epoch(
+            model, train_loader, optimizer, criterion, device
+        )
+        val_loss, val_acc = validate(
+            model, val_loader, criterion, device
+        )
+
+        scheduler.step(val_loss)
+
+        history['train_loss'].append(train_loss)
+        history['val_loss'].append(val_loss)
+        history['train_acc'].append(train_acc)
+        history['val_acc'].append(val_acc)
+
+        print(
+            f"Epoch [{epoch+1:02d}/{num_epochs}]  "
+            f"Train — Loss: {train_loss:.4f}  Acc: {train_acc:.1f}%  |  "
+            f"Val — Loss: {val_loss:.4f}  Acc: {val_acc:.1f}%"
+        )
+
+        # ── Save best model ───────────────────────────────────────────────
+        if val_loss < best_val_loss:
+            best_val_loss    = val_loss
+            patience_counter = 0
+            torch.save(model.state_dict(), save_path)
+            print(f"  ✓ Saved best model (val loss: {best_val_loss:.4f})")
+        else:
+            patience_counter += 1
+            print(f"  No improvement. Patience: {patience_counter}/{early_stop_patience}")
+            if patience_counter >= early_stop_patience:
+                print(f"\nEarly stopping at epoch {epoch+1}")
+                break
+
+    return history
+
+if __name__ == "__main__":
+
+    print("\n" + "="*55)
+    print("  PHASE A — Training head only (backbone frozen)")
+    print("="*55)
+
+    model = build_model(num_classes=NUM_CLASSES, dropout=0.4).to(DEVICE)
+
+    optimizer_A = Adam(
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr=1e-3
+    )
+    scheduler_A = ReduceLROnPlateau(
+        optimizer_A, mode='min', patience=3, factor=0.5
+    )
+
+    history_A = run_training(
+        model       = model,
+        train_loader= train_loader,
+        val_loader  = val_loader,
+        criterion   = criterion,
+        optimizer   = optimizer_A,
+        scheduler   = scheduler_A,
+        device      = DEVICE,
+        num_epochs  = 15,
+        save_path   = "models/best_model_phaseA.pth",
+        early_stop_patience = 5
+    )
+
+    print("\n" + "="*55)
+    print("  PHASE B — Fine-tuning (backbone partially unfrozen)")
+    print("="*55)
+
+    # Load the best weights from Phase A before unfreezing
+    model.load_state_dict(torch.load("models/best_model_phaseA.pth"))
+
+    # Unfreeze the last 5 layers of the backbone
+    model = unfreeze_backbone(model, unfreeze_from_layer=14)
+
+    # Use a much lower learning rate — you don't want to destroy
+    # the pretrained features, just nudge them toward skin diseases
+    optimizer_B = Adam(
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr=1e-4    # 10x smaller than Phase A
+    )
+    scheduler_B = ReduceLROnPlateau(
+        optimizer_B, mode='min', patience=3, factor=0.5, verbose=True
+    )
+
+    history_B = run_training(
+        model       = model,
+        train_loader= train_loader,
+        val_loader  = val_loader,
+        criterion   = criterion,
+        optimizer   = optimizer_B,
+        scheduler   = scheduler_B,
+        device      = DEVICE,
+        num_epochs  = 15,
+        save_path   = "models/best_model_final.pth",
+        early_stop_patience = 7
+    )
+
+    import json
+    import matplotlib.pyplot as plt
+
+    # Merge both phase histories for plotting
+    combined = {
+        'train_loss': history_A['train_loss'] + history_B['train_loss'],
+        'val_loss'  : history_A['val_loss']   + history_B['val_loss'],
+        'train_acc' : history_A['train_acc']  + history_B['train_acc'],
+        'val_acc'   : history_A['val_acc']    + history_B['val_acc'],
+    }
+
+    with open("models/history.json", "w") as f:
+        json.dump(combined, f)
+
+    phase_A_end = len(history_A['train_loss'])
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+    for ax, metric, title in [
+        (ax1, 'loss', 'Loss'),
+        (ax2, 'acc',  'Accuracy (%)')
+    ]:
+        ax.plot(combined[f'train_{metric}'], label=f'Train {title}')
+        ax.plot(combined[f'val_{metric}'],   label=f'Val {title}')
+        ax.axvline(
+            phase_A_end - 1, color='gray',
+            linestyle='--', linewidth=1,
+            label='Phase B starts'
+        )
+        ax.set_title(f"{title} over epochs")
+        ax.set_xlabel("Epoch")
+        ax.legend()
+
+    plt.tight_layout()
+    plt.savefig("models/training_curves.png", dpi=150)
+    plt.show()
+    print("Saved: models/training_curves.png")
