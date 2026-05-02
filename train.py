@@ -5,7 +5,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
+import json
 from model import build_model, unfreeze_backbone
 from dataset import get_dataloaders   # your dataset.py
 
@@ -231,3 +231,8 @@ if __name__ == "__main__":
     plt.savefig("models/training_curves.png", dpi=150)
     plt.show()
     print("\nTraining complete. Final model saved to models/best_model_final.pth")
+
+    classes_path = os.path.join("models", "classes.json")
+    with open(classes_path, "w") as f:
+        json.dump(classes, f, indent=2)
+    print(f"Saved class names to {classes_path}")
