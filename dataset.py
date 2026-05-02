@@ -13,7 +13,7 @@ def get_dataloaders(
 	test_folder: str = "test",
 	batch_size: int = 32,
 	val_split: float = 0.15,
-	num_workers: int = 4,
+	num_workers: int = 0,
 	img_size: int = 224,
 ) -> Tuple[DataLoader, DataLoader, Optional[DataLoader], List[str]]:
 	"""Create train/val/test DataLoaders using ImageFolder and WeightedRandomSampler.
