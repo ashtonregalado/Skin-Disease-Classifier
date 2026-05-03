@@ -32,10 +32,10 @@ def get_dataloaders(
 
 	transform_train = transforms.Compose([
 		transforms.Resize(256),
-		transforms.RandomResizedCrop(img_size),
+		transforms.RandomResizedCrop(img_size, scale=(0.80, 1.0)),
 		transforms.RandomHorizontalFlip(),
-		transforms.RandomRotation(15),
-		transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+		transforms.RandomRotation(20),
+		transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
 		transforms.ToTensor(),
 		transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
 	])
