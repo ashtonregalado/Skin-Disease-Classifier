@@ -28,6 +28,8 @@ train_loader, val_loader, test_loader, classes = get_dataloaders(
 NUM_CLASSES = len(classes)   # derived from the returned list, not a separate return value
 print(f"Classes ({NUM_CLASSES}): {classes}")
 
+USE_CLASS_WEIGHTS = False
+
 # ── Class counts in the same order as classes list ────────────────────────
 # Order must match ImageFolder's alphabetical class ordering
 class_count_map = {
@@ -45,13 +47,16 @@ class_count_map = {
 class_counts = [class_count_map[c] for c in classes]
 total_images = sum(class_counts)
 
-class_weights = torch.tensor(
-    [total_images / (NUM_CLASSES * c) for c in class_counts],
-    dtype=torch.float
-).to(DEVICE)
-
-criterion = nn.CrossEntropyLoss(weight=class_weights)
-print("Weighted loss ready.")
+if USE_CLASS_WEIGHTS:
+    class_weights = torch.tensor(
+        [total_images / (NUM_CLASSES * c) for c in class_counts],
+        dtype=torch.float
+    ).to(DEVICE)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    print("Weighted loss ready.")
+else:
+    criterion = nn.CrossEntropyLoss()
+    print("Unweighted loss ready.")
 
 def train_one_epoch(model, loader, optimizer, criterion, device):
     model.train()
@@ -163,9 +168,9 @@ if __name__ == "__main__":
         optimizer          = optimizer_A,
         scheduler          = scheduler_A,
         device             = DEVICE,
-        num_epochs         = 15,
+        num_epochs         = 18,
         save_path          = "models/best_model_phaseA.pth",
-        early_stop_patience= 5
+        early_stop_patience= 6
     )
 
     # ── Phase B: Fine-tune with unfrozen backbone ─────────────────────────
@@ -177,11 +182,11 @@ if __name__ == "__main__":
     model.load_state_dict(
         torch.load("models/best_model_phaseA.pth", map_location=DEVICE)
     )
-    model = unfreeze_backbone(model, unfreeze_from_layer=14)
+    model = unfreeze_backbone(model, unfreeze_from_layer=10)
 
     optimizer_B = Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
-        lr=1e-4    # 10x lower — don't destroy pretrained features
+        lr=5e-5    # gentler fine-tuning for the frozen-to-unfrozen transition
     )
     scheduler_B = ReduceLROnPlateau(
         optimizer_B, mode='min', patience=3, factor=0.5)
@@ -194,9 +199,9 @@ if __name__ == "__main__":
         optimizer          = optimizer_B,
         scheduler          = scheduler_B,
         device             = DEVICE,
-        num_epochs         = 15,
+        num_epochs         = 25,
         save_path          = "models/best_model_final.pth",
-        early_stop_patience= 7
+        early_stop_patience= 8
     )
 
     # ── Save combined history and plot ────────────────────────────────────
