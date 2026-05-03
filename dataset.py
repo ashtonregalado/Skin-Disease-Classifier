@@ -26,10 +26,11 @@ def get_dataloaders(
 	if not os.path.isdir(train_dir):
 		raise FileNotFoundError(f"Train directory not found: {train_dir}")
 
-	# ImageNet normalization 
+	# ImageNet normalization (matches pretrained models)
 	imagenet_mean = [0.485, 0.456, 0.406]
 	imagenet_std = [0.229, 0.224, 0.225]
 
+	# Training augmentations
 	transform_train = transforms.Compose([
 		transforms.Resize(256),
 		transforms.RandomResizedCrop(img_size, scale=(0.80, 1.0)),
@@ -40,6 +41,7 @@ def get_dataloaders(
 		transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
 	])
 
+	# Validation/test preprocessing (no augmentation)
 	transform_val = transforms.Compose([
 		transforms.Resize(256),
 		transforms.CenterCrop(img_size),
@@ -47,17 +49,16 @@ def get_dataloaders(
 		transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
 	])
 
-	# two ImageFolders for different transforms
+	# Separate datasets to apply different transforms
 	dataset_train = datasets.ImageFolder(train_dir, transform=transform_train)
 	dataset_val = datasets.ImageFolder(train_dir, transform=transform_val)
-	pin_memory = torch.cuda.is_available()
 
+	pin_memory = torch.cuda.is_available()
 	num_samples = len(dataset_train)
 
+	# Create reproducible train/validation split
 	split = int(val_split * num_samples)
-	# shuffle indices for split
-	generator = torch.Generator()
-	generator.manual_seed(42)
+	generator = torch.Generator().manual_seed(42)
 	perm = torch.randperm(num_samples, generator=generator).tolist()
 
 	val_idx = perm[:split]
@@ -66,20 +67,29 @@ def get_dataloaders(
 	train_subset = Subset(dataset_train, train_idx)
 	val_subset = Subset(dataset_val, val_idx)
 
-	# Compute class counts on the train subset for WeightedRandomSampler
+	# Compute class distribution for weighted sampling
 	targets = [dataset_train.samples[i][1] for i in train_idx]
+
 	class_counts = {}
 	for t in targets:
 		class_counts[t] = class_counts.get(t, 0) + 1
 
 	num_classes = len(dataset_train.classes)
-	# avoid division by zero
+
+	# Avoid division by zero for missing classes
 	class_counts_list = [class_counts.get(i, 0) for i in range(num_classes)]
 	class_weights = [0.0 if c == 0 else 1.0 / c for c in class_counts_list]
 
+	# Assign weight to each sample
 	sample_weights = [class_weights[t] for t in targets]
-	sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
 
+	sampler = WeightedRandomSampler(
+		weights=sample_weights,
+		num_samples=len(sample_weights),
+		replacement=True
+	)
+
+	# Training loader uses sampler instead of shuffle
 	train_loader = DataLoader(
 		train_subset,
 		batch_size=batch_size,
@@ -88,6 +98,7 @@ def get_dataloaders(
 		pin_memory=pin_memory,
 	)
 
+	# Validation loader (no shuffle)
 	val_loader = DataLoader(
 		val_subset,
 		batch_size=batch_size,
@@ -96,6 +107,7 @@ def get_dataloaders(
 		pin_memory=pin_memory,
 	)
 
+	# Optional test loader if test folder exists
 	test_loader = None
 	if os.path.isdir(test_dir):
 		test_dataset = datasets.ImageFolder(test_dir, transform=transform_val)
@@ -111,7 +123,7 @@ def get_dataloaders(
 
 
 if __name__ == "__main__":
-	# local check only 
+	# Quick local check
 	try:
 		t, v, te, classes = get_dataloaders()
 		print("Created DataLoaders:")

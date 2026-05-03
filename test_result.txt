@@ -1,3 +1,5 @@
+FIRST TRAINING RESULTS
+
 =======================================================
   TEST SET RESULTS
 =======================================================
@@ -54,3 +56,63 @@ Per-class accuracy:
   Vitiligo                       81.7%  ████████████████
   Unknown_Normal                 84.1%  ████████████████
   Candidiasis                    85.2%  █████████████████
+
+
+SECOND TRAINING RESULTS
+
+=======================================================
+  TEST SET RESULTS
+=======================================================
+                     precision    recall  f1-score   support
+
+               Acne      0.672     0.692     0.682        65
+  Actinic_Keratosis      0.584     0.542     0.562        83
+      Benign_tumors      0.558     0.521     0.538       121
+            Bullous      0.700     0.636     0.667        55
+        Candidiasis      0.655     0.704     0.679        27
+       DrugEruption      0.556     0.574     0.565        61
+             Eczema      0.540     0.661     0.594       112
+ Infestations_Bites      0.397     0.483     0.436        60
+             Lichen      0.667     0.393     0.495        61
+              Lupus      0.382     0.382     0.382        34
+              Moles      0.463     0.625     0.532        40
+          Psoriasis      0.544     0.636     0.586        88
+            Rosacea      0.468     0.786     0.587        28
+  Seborrh_Keratoses      0.755     0.725     0.740        51
+         SkinCancer      0.709     0.506     0.591        77
+Sun_Sunlight_Damage      0.409     0.529     0.462        34
+              Tinea      0.563     0.480     0.519       102
+     Unknown_Normal      0.932     0.942     0.937       189
+    Vascular_Tumors      0.615     0.400     0.485        60
+         Vasculitis      0.483     0.538     0.509        52
+           Vitiligo      0.855     0.793     0.823        82
+              Warts      0.578     0.578     0.578        64
+
+           accuracy                          0.621      1546
+          macro avg      0.595     0.597     0.589      1546
+       weighted avg      0.632     0.621     0.621      1546
+
+
+Per-class accuracy:
+  Lupus                          38.2%  ███████  ← needs attention
+  Lichen                         39.3%  ███████  ← needs attention
+  Vascular_Tumors                40.0%  ████████  ← needs attention
+  Tinea                          48.0%  █████████  ← needs attention
+  Infestations_Bites             48.3%  █████████  ← needs attention
+  SkinCancer                     50.6%  ██████████
+  Benign_tumors                  52.1%  ██████████
+  Sun_Sunlight_Damage            52.9%  ██████████
+  Vasculitis                     53.8%  ██████████
+  Actinic_Keratosis              54.2%  ██████████
+  DrugEruption                   57.4%  ███████████
+  Warts                          57.8%  ███████████
+  Moles                          62.5%  ████████████
+  Bullous                        63.6%  ████████████
+  Psoriasis                      63.6%  ████████████
+  Eczema                         66.1%  █████████████
+  Acne                           69.2%  █████████████
+  Candidiasis                    70.4%  ██████████████
+  Seborrh_Keratoses              72.5%  ██████████████
+  Rosacea                        78.6%  ███████████████
+  Vitiligo                       79.3%  ███████████████
+  Unknown_Normal                 94.2%  ██████████████████

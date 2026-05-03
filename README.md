@@ -32,6 +32,14 @@ Skin-Disease-Classifier/
 └── README.md
 ```
 
+## Supported Skin Conditions (22 classes)
+
+Acne, Actinic Keratosis, Benign Tumors, Bullous, Candidiasis,
+Drug Eruption, Eczema, Infestations/Bites, Lichen, Lupus, Moles,
+Psoriasis, Rosacea, Seborrheic Keratoses, Skin Cancer,
+Sun/Sunlight Damage, Tinea, Unknown/Normal, Vascular Tumors,
+Vasculitis, Vitiligo, Warts
+
 ## How to run the app
 
 1. Install dependencies:
@@ -99,7 +107,7 @@ This prints:
 ## Notes
 
 - CPU training can take several hours depending on your laptop.
--  Keep `models/classes.json` if retraining model
+- Keep `models/classes.json` if retraining model
 
 ## Requirements
 
