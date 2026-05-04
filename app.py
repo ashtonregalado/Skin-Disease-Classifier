@@ -4,6 +4,7 @@ import torch
 import streamlit as st
 from PIL import Image
 from torchvision import transforms
+from typing import cast
 
 from model import build_model
 
@@ -80,7 +81,7 @@ def preprocess_image(image: Image.Image) -> torch.Tensor:
         transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
 
-    return preprocess(image)
+    return cast(torch.Tensor, preprocess(cast(Image.Image, image)))
 
 
 # Run inference and return top-k predictions
@@ -103,7 +104,7 @@ def predict(image: Image.Image, model, device, classes, topk: int = 3):
 
 # Main Streamlit app UI and workflow
 def main():
-    st.set_page_config(page_title="Skin Disease Classifier", layout="centered")
+    st.set_page_config(page_title="Skin Disease Classifier", layout="wide")
     st.title("🩺 Skin Disease Classifier")
 
     # Load class labels
@@ -125,60 +126,69 @@ def main():
 
     st.markdown("---")
 
-    uploaded = st.file_uploader(
-        "Upload a skin image",
-        type=["png", "jpg", "jpeg"]
-    )
+    left_col, right_col = st.columns([1, 1.2], gap="large")
 
-    if uploaded is not None:
-        # Validate file type
-        allowed_types = ["image/png", "image/jpeg", "image/jpg"]
-        if uploaded.type not in allowed_types:
-            st.error(
-                f"❌ Unsupported file type: '{uploaded.type}'. Please upload PNG or JPG."
-            )
-            return
+    with left_col:
+        uploaded = st.file_uploader(
+            "Upload a skin image",
+            type=["png", "jpg", "jpeg"]
+        )
 
-        # Check if file is a valid image
-        try:
-            image = Image.open(uploaded)
-            image.verify()
-            image = Image.open(uploaded)  # reopen after verify
-        except Exception:
-            st.error("❌ Invalid or corrupted image file.")
-            return
-    else:
-        st.info("Upload an image to get a prediction.")
-        return
-
-    image = Image.open(uploaded)
-    st.image(image, caption="Uploaded image", width=360)
-
-    # Load model
-    with st.spinner("Loading model..."):
-        try:
-            model, device = load_model_and_device(len(classes))
-        except Exception as e:
-            st.error(f"Model load error: {e}")
-            return
-
-    # Run prediction
-    if st.button("Predict"):
-        with st.spinner("Running inference..."):
-            try:
-                results = predict(image, model, device, classes, topk=3)
-            except Exception as e:
-                st.error(f"Prediction error: {e}")
+        image = None
+        if uploaded is not None:
+            # Validate file type
+            allowed_types = ["image/png", "image/jpeg", "image/jpg"]
+            if uploaded.type not in allowed_types:
+                st.error(
+                    f"❌ Unsupported file type: '{uploaded.type}'. Please upload PNG or JPG."
+                )
                 return
 
-        st.success("Prediction complete")
+            # Check if file is a valid image
+            try:
+                image = Image.open(uploaded)
+                image.verify()
+                image = Image.open(uploaded)  # reopen after verify
+            except Exception:
+                st.error("❌ Invalid or corrupted image file.")
+                return
 
-        # Display results with progress bars
-        for label, prob in results:
-            st.write(f"**{label}**")
-            st.progress(float(prob))
-            st.write(f"{prob * 100:.2f}%")
-            st.markdown("---")
+            st.image(image, caption="Uploaded image", width="stretch")
+        else:
+            st.info("Upload an image to get a prediction.")
+
+    with right_col:
+        st.subheader("Prediction")
+
+        if uploaded is None or image is None:
+            st.info("Your prediction will appear here after you upload an image and click Predict.")
+            return
+
+        # Load model
+        with st.spinner("Loading model..."):
+            try:
+                model, device = load_model_and_device(len(classes))
+            except Exception as e:
+                st.error(f"Model load error: {e}")
+                return
+
+        # Run prediction
+        if st.button("Predict"):
+            with st.spinner("Running inference..."):
+                try:
+                    results = predict(image, model, device, classes, topk=3)
+                except Exception as e:
+                    st.error(f"Prediction error: {e}")
+                    return
+
+            st.success("Prediction complete")
+
+            # Display results with progress bars
+            for label, prob in results:
+                st.write(f"**{label}**")
+                st.progress(float(prob))
+                st.write(f"{prob * 100:.2f}%")
+                st.markdown("---")
 
 
 if __name__ == "__main__":
